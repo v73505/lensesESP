@@ -426,7 +426,7 @@ while true; do
     source /etc/lenses.env
     echo "\${ESP_PASSWORD}" | kinit -r7d "\${ESP_USERNAME}"
     unset ESP_PASSWORD ESP_USERNAME
-    sleep 86400
+    sleep 7200
 done
 EOF
 chmod 0700 /etc/krb5.d/action_kinit.sh
@@ -502,13 +502,13 @@ if [ "${ESP_ENABLED}" == "True" ]; then
         #### Write credentials to disk, under /etc/lenses.env.
         #### This file should always have 0600
         if ! grep -iq 'ESP_USERNAME' /etc/lenses.env; then
-            echo "ESP_USERNAME=${ESP_USERNAME}" \
+            printf "%q\n" ESP_USERNAME="${ESP_USERNAME}" \
                 >> /etc/lenses.env
 
             echo "Username parsed"
         fi
         if ! grep -iq 'ESP_PASSWORD' /etc/lenses.env; then
-            echo "ESP_PASSWORD=${ESP_PASSWORD}" \
+            printf "%q\n" ESP_PASSWORD="${ESP_PASSWORD}" \
                 >> /etc/lenses.env
 
             echo "Password parsed"
@@ -571,13 +571,13 @@ if [ "${ESP_ENABLED}" == "True" ] && [ "${ENABLE_KRB_TICKET_INIT}" == "True" ]; 
     sudo systemctl enable krb-ticket-init.service
     echo "KRB5 ticket init systemd unit started and enabled"
 
-    sudo systemctl start krb-ticket-renewal.service
-    sudo systemctl enable krb-ticket-renewal.service
-    echo "KRB5 ticket renewal systemd unit started and enabled"
+    # sudo systemctl start krb-ticket-renewal.service
+    # sudo systemctl enable krb-ticket-renewal.service
+    # echo "KRB5 ticket renewal systemd unit started and enabled"
 
     sleep 2
-    if ! systemctl is-active krb-ticket-renewal.service >/dev/null 2>&1; then
-        echo "Ticket renewal service failed"
+    if ! systemctl is-active krb-ticket-init.service >/dev/null 2>&1; then
+        echo "Ticket init service failed"
         exit 1
     fi
 fi
