@@ -1,0 +1,30 @@
+#!/bin/bash
+# Patching for bug fix - https://msdata.visualstudio.com/HDInsight/_git/granola/pullrequest/434016
+
+set -eux
+scriptName=fix_hdinsightlogging.sh
+versionNumber=2.0
+logger -p user.info "$scriptName $versionNumber - Starting."
+
+fix_hdinsightlogging_bug() {
+    logger -p user.info "$scriptName $versionNumber - Fixing bug in $1."
+    if grep -Fq "if enable_console_logger and not stream_handler_found:" $1; then
+        logger -p user.info "$scriptName $versionNumber - File $1 is already patched."
+        return 0
+    fi
+
+    sed -i 's/if stream_handler_found and syslog_handler_found:/if not syslog_handler_found:/' $1
+    sed -i '/if not syslog_handler_found:/{n;N;d}' $1
+    sed -i 's/#add syslog handler if we are on linux./    #add syslog handler if we are on linux./' $1
+    sed -i 's/    _add_syslog_handler_with_retry(logger, syslog_facility)/        _add_syslog_handler_with_retry(logger, syslog_facility)/' $1
+    sed -i 's/if enable_console_logger:/if enable_console_logger and not stream_handler_found:/' $1
+    logger -p user.info "$scriptName $versionNumber - Completed fixing bug in $1."
+}
+file_list=$(find / -name "hdinsightlogging.py")
+for file in $file_list
+do
+    fix_hdinsightlogging_bug $file
+done
+sudo pkill -f "ambari_agent/main.py"
+sudo service ambari-agent restart
+logger -p user.info "$scriptName $versionNumber - Completed."
