@@ -1,0 +1,119 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "clusterName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the HDInsight cluster"
+      }
+    },
+    "galleryPackageIdentity": {
+      "type": "string",
+      "metadata": {
+        "description": "Lenses.io, Realtime streaming DataOps at the heart of your Business."
+      },
+      "defaultValue": "lenses-io"
+    },
+    "edgeNodeSize": {
+      "type": "string",
+      "metadata": {
+        "description": "Size of the edge node that hosts the application"
+      },
+      "defaultValue": "Standard_DS3_V2",
+      "allowedValues": [
+        "Standard_A4_V2",
+        "Standard_A8_V2",
+        "Standard_D3_V2",
+        "Standard_D4_V2",
+        "Standard_D5_V2",
+        "Standard_D12_V2",
+        "Standard_D13_V2",
+        "Standard_D14_V2",
+        "Standard_D15_V2",
+        "Standard_DS3_V2",
+        "Standard_DS4_V2",
+        "Standard_DS3_V2",
+        "Standard_DS4_V2",
+        "Standard_DS5_V2",
+        "Standard_DS12_V2",
+        "Standard_DS13_V2",
+        "Standard_DS14_V2",
+        "Standard_DS15_V2"
+      ]
+    },
+    "licenseKey": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Your own license for Lenses. Please download it here https://www.lenses.io/downloads/"
+      }
+    }
+  },
+  "variables": {
+    "applicationName": "lenses-io-4-0",
+    "singleQuote": "'"
+  },
+  "resources": [
+    {
+      "apiVersion": "2018-02-01",
+      "name": "pid-4f74d888-8490-52d5-9694-27eeebd9a4e6",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+          "mode": "Incremental",
+          "template": {
+            "$schema": "https://schema.management.azure.com/schemas/2018-05-01/deploymentTemplate.json#",
+            "contentVersion": "1.0.0.0",
+              "resources": []
+          }
+      }
+    },
+    {
+      "apiVersion": "2018-06-01-preview",
+      "type": "Microsoft.HDInsight/clusters/applications",
+      "name": "[concat(parameters('clusterName'),'/', variables('applicationName'))]",
+      "dependsOn": [],
+      "properties": {
+        "marketPlaceIdentifier": "[parameters('galleryPackageIdentity')]",
+        "computeProfile": {
+          "roles": [
+            {
+              "name": "edgenode",
+              "targetInstanceCount": 1,
+              "hardwareProfile": {
+                "vmSize": "[parameters('edgeNodeSize')]"
+              }
+            }
+          ]
+        },
+        "installScriptActions": [
+          {
+            "name": "[concat(variables('applicationName'), '-', uniquestring('applicationName'))]",
+            "uri": "https://archive.landoop.com/repository/cloud/azure/hdinsight/4.0/configure.sh",
+            "parameters": "[concat('-n ', parameters('clusterName'), ' -l ', variables('singleQuote'), parameters('licenseKey'), variables('singleQuote'))]",
+            "roles": [
+              "edgenode"
+            ]
+          }
+        ],
+        "uninstallScriptActions": [],
+        "httpsEndpoints": [
+          {
+            "subDomainSuffix": "len",
+            "disableGatewayAuth": true,
+            "destinationPort": 9991,
+            "accessModes": [
+              "webpage"
+            ]
+          }
+        ],
+        "applicationType": "CustomApplication"
+      }
+    }
+  ],
+  "outputs": {
+    "application": {
+      "type": "object",
+      "value": "[reference(resourceId('Microsoft.HDInsight/clusters/applications/', parameters('clusterName'), variables('applicationName')))]"
+    }
+  }
+}
